@@ -26,8 +26,6 @@ if status is-interactive
     # Commands to run in interactive sessions can go here
     set fish_greeting
 end
-# FSSH - Fish SSH Connection Manager
-source ~/.apps/fssh/fssh.fish
 
 # Source zoxide for the z command
 zoxide init fish | source
