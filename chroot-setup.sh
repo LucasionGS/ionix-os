@@ -79,6 +79,228 @@ interactive_config() {
   done
 }
 
+# Install all the specific OS packages
+# Here we do all of the installation of the Ionix OS packages and configuration
+boot::install_ionix_os() {
+  local curDir="$(pwd)"
+  # If yay bin doesn't exist, install it
+  if ! command -v yay &> /dev/null; then
+    echo "Installing yay AUR helper..."
+    echo "This will allow us to install packages from the Arch User Repository"
+    
+    if git clone https://aur.archlinux.org/yay.git /tmp/yay; then
+      cd /tmp/yay
+      if makepkg -si --noconfirm; then
+        echo "✓ Yay AUR helper installed successfully"
+      else
+        echo "Error: Failed to build and install yay"
+      fi
+      cd "$curDir"
+      rm -rf /tmp/yay
+    else
+      echo "Error: Failed to clone yay repository"
+    fi
+  else
+    echo "✓ Yay already installed, skipping..."
+  fi
+
+  # Install Ionix OS packages based on config/packages.json
+  local packages_file="$SCRIPT_DIR/config/packages.json"
+  
+  if [[ ! -f "$packages_file" ]]; then
+    echo "Warning: packages.json not found at $packages_file"
+    return 0
+  fi
+  
+  # Check if jq is installed for JSON parsing
+  if ! command -v jq &> /dev/null; then
+    echo "Installing jq for JSON parsing..."
+    pacman -S --noconfirm --needed jq || {
+      echo "Error: Failed to install jq"
+      return 1
+    }
+  fi
+  
+  echo ""
+  echo "=========================================="
+  echo "  Installing Ionix OS Packages"
+  echo "=========================================="
+  echo ""
+  
+  # 1. Install Pacman packages
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "📦 Installing Pacman packages..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  local pacman_packages
+  pacman_packages=$(jq -r '.pacman[]' "$packages_file" 2>/dev/null)
+  
+  if [[ -n "$pacman_packages" ]]; then
+    echo "Packages to install:"
+    echo "$pacman_packages" | sed 's/^/  - /'
+    echo ""
+    
+    # Convert to array and install
+    local pkg_array=()
+    while IFS= read -r pkg; do
+      pkg_array+=("$pkg")
+    done <<< "$pacman_packages"
+    
+    if pacman -S --noconfirm --needed "${pkg_array[@]}"; then
+      echo "✓ Pacman packages installed successfully"
+    else
+      echo "Warning: Some pacman packages failed to install"
+    fi
+  else
+    echo "No pacman packages to install"
+  fi
+  
+  # 2. Install AUR packages
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🔧 Installing AUR packages..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  local aur_packages
+  aur_packages=$(jq -r '.aur[]' "$packages_file" 2>/dev/null)
+  
+  if [[ -n "$aur_packages" ]]; then
+    echo "Packages to install:"
+    echo "$aur_packages" | sed 's/^/  - /'
+    echo ""
+    
+    # Convert to array and install with yay
+    local aur_array=()
+    while IFS= read -r pkg; do
+      aur_array+=("$pkg")
+    done <<< "$aur_packages"
+    
+    if yay -S --noconfirm --needed "${aur_array[@]}"; then
+      echo "✓ AUR packages installed successfully"
+    else
+      echo "Warning: Some AUR packages failed to install"
+    fi
+  else
+    echo "No AUR packages to install"
+  fi
+  
+  # 3. Install Snap packages
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "📸 Installing Snap packages..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+  # First enable and start snapd
+  if systemctl enable snapd.socket &> /dev/null && systemctl start snapd.socket &> /dev/null; then
+    echo "✓ Snapd service enabled and started"
+    
+    local snap_packages
+    snap_packages=$(jq -r '.snap[]' "$packages_file" 2>/dev/null)
+    
+    if [[ -n "$snap_packages" ]]; then
+      echo "Packages to install:"
+      echo "$snap_packages" | sed 's/^/  - /'
+      echo ""
+      
+      while IFS= read -r pkg; do
+        if snap install "$pkg"; then
+          echo "✓ Installed: $pkg"
+        else
+          echo "Warning: Failed to install snap package: $pkg"
+        fi
+      done <<< "$snap_packages"
+    else
+      echo "No snap packages to install"
+    fi
+  else
+    echo "Warning: Failed to start snapd service, skipping snap packages"
+  fi
+  
+  # 4. Install Other packages (custom scripts)
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🛠️  Installing custom packages..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+  local other_keys
+  other_keys=$(jq -r '.other | keys[]' "$packages_file" 2>/dev/null)
+  
+  if [[ -n "$other_keys" ]]; then
+    while IFS= read -r key; do
+      echo ""
+      echo "Installing: $key"
+      
+      # Get commands array for this key
+      local cmd_count
+      cmd_count=$(jq -r ".other[\"$key\"] | length" "$packages_file")
+      
+      local success=true
+      for ((i=0; i<cmd_count; i++)); do
+        local cmd
+        cmd=$(jq -r ".other[\"$key\"][$i]" "$packages_file")
+        
+        echo "  Running: $cmd"
+        if eval "$cmd"; then
+          echo "  ✓ Command succeeded"
+        else
+          echo "  ✗ Command failed"
+          success=false
+          break
+        fi
+      done
+      
+      if [[ "$success" == "true" ]]; then
+        echo "✓ $key installed successfully"
+      else
+        echo "Warning: $key installation failed"
+      fi
+    done <<< "$other_keys"
+  else
+    echo "No custom packages to install"
+  fi
+  
+  # 5. Install Fish plugins
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🐟 Installing Fish shell plugins..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+  local fish_plugins
+  fish_plugins=$(jq -r '.fish_plugins[]' "$packages_file" 2>/dev/null)
+  
+  if [[ -n "$fish_plugins" ]]; then
+    echo "Plugins to install:"
+    echo "$fish_plugins" | sed 's/^/  - /'
+    echo ""
+    
+    while IFS= read -r plugin; do
+      # Check if it's a theme or a package
+      if [[ "$plugin" == "bobthefish" ]]; then
+        echo "Installing and activating theme: $plugin"
+        if fish -c "omf install $plugin && omf theme $plugin"; then
+          echo "✓ Theme $plugin installed and activated"
+        else
+          echo "Warning: Failed to install theme: $plugin"
+        fi
+      else
+        echo "Installing plugin: $plugin"
+        if fish -c "fisher install $plugin"; then
+          echo "✓ Plugin $plugin installed"
+        else
+          echo "Warning: Failed to install plugin: $plugin"
+        fi
+      fi
+    done <<< "$fish_plugins"
+  else
+    echo "No Fish plugins to install"
+  fi
+  
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "✓ Ionix OS package installation complete!"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+  cd "$curDir"
+}
+
 # Main execution
 main() {
   # Try to load config from file, otherwise use interactive
@@ -130,6 +352,9 @@ main() {
   pacman -S --noconfirm --needed base-devel sudo || {
     echo "Warning: Failed to install some packages."
   }
+
+  # Install the actual system of Ionix (lol)
+  boot::install_ionix_os
   
   # User setup
   user::setup_interactive || {

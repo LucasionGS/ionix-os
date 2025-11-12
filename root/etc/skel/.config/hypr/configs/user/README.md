@@ -1,0 +1,1 @@
+Adding a file with the same name as in `configs` will override the default settings with your custom configuration, and not be committed to the repository.
