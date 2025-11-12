@@ -64,18 +64,34 @@ pacstrap::install_base_system() {
     return 1
   fi
   
-  # Copy Ionix scripts to the new system
+  # Copy entire Ionix repository to the new system
   local ionix_dir="$target_dir/root/ionix"
-  echo "Copying Ionix installation scripts to $ionix_dir..."
-  mkdir -p "$ionix_dir"
+  echo "Copying entire Ionix repository to $ionix_dir..."
   
-  # Copy all scripts (assuming we're in the ionix repo root)
-  if [[ -d "$(pwd)/lib" ]]; then
-    cp -r "$(pwd)/lib" "$ionix_dir/" && \
-    cp -r "$(pwd)"/*.sh "$ionix_dir/" 2>/dev/null || true
-    echo "✓ Ionix scripts copied."
+  # Determine the ionix repository root (parent directory of lib/)
+  local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  
+  if [[ -d "$script_dir/lib" ]]; then
+    echo "  Copying from: $script_dir"
+    
+    # Remove destination if it exists to ensure clean copy
+    rm -rf "$ionix_dir"
+    mkdir -p "$ionix_dir"
+    
+    # Copy entire repository (excluding .git if present)
+    cp -r "$script_dir"/* "$ionix_dir/" 2>/dev/null || true
+    
+    # Also copy hidden files except .git
+    for file in "$script_dir"/.*; do
+      if [[ -f "$file" && "$(basename "$file")" != ".git" ]]; then
+        cp "$file" "$ionix_dir/" 2>/dev/null || true
+      fi
+    done
+    
+    echo "✓ Ionix repository copied."
   else
-    echo "Warning: Could not copy Ionix scripts."
+    echo "Error: Could not find Ionix repository."
+    return 1
   fi
   
   echo ""
