@@ -24,7 +24,7 @@ Before running the installation:
 3. **Have `curl` installed** (sudo pacman -Sy curl)
 4. **Execute**
 ```bash
-curl -sSL https://raw.githubusercontent.com/LucasionGS/ionix-os/main/bootstrap.sh | bash
+bash -i <(curl -fsSL https://raw.githubusercontent.com/LucasionGS/ionix-os/main/bootstrap.sh)
 ```
 
 ### Manual Steps
