@@ -190,6 +190,8 @@ select_locale() {
 
 # Function: Set hostname
 select_hostname() {
+  # Disable errors temporarily
+  set +e
   echo ""
   echo "Setting hostname..."
   
@@ -212,6 +214,8 @@ select_hostname() {
     echo "✓ Hostname set to: $HOSTNAME"
     break
   done
+  # Re-enable error handling
+  set -e
 }
 
 # Function: Select installation partition
