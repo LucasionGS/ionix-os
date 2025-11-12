@@ -4,6 +4,7 @@ set -e
 
 source ./lib/software.sh
 source ./lib/pacstrap.sh
+source ./lib/disk.sh
 
 IONIX_PACMAN_OPTIONS="--noconfirm --needed"
 
@@ -226,10 +227,10 @@ select_partition() {
   
   echo "Scanning for available block devices..."
   
-  # Get list of partitions with size info
+  # Get list of partitions only (not whole disks)
   local partitions
   partitions=$(lsblk -no NAME,SIZE,TYPE,MOUNTPOINT | \
-    grep -E "part|disk" | \
+    grep -E "part" | \
     awk '{printf "%-15s %-10s %-10s %s\n", "/dev/"$1, $2, $3, $4}')
   
   if [[ -z "$partitions" ]]; then
@@ -298,7 +299,35 @@ select_keyboard_layout
 select_timezone
 select_locale
 select_hostname
-select_partition
+
+# Disk partitioning
+disk::partition_interactive || {
+  echo "Error: Disk partitioning failed."
+  exit 1
+}
+
+# If user chose to use existing partitions, let them select
+if [[ -z "$INSTALL_TARGET" ]]; then
+  select_partition || {
+    echo "Error: Partition selection failed."
+    exit 1
+  }
+fi
+
+# Ensure INSTALL_DISK is set for bootloader
+if [[ -z "$INSTALL_DISK" ]]; then
+  # Determine parent disk device (for GRUB BIOS installation)
+  if [[ "$INSTALL_TARGET" =~ ^(/dev/[a-z]+) ]]; then
+    INSTALL_DISK="${BASH_REMATCH[1]}"
+  elif [[ "$INSTALL_TARGET" =~ ^(/dev/nvme[0-9]+n[0-9]+) ]]; then
+    INSTALL_DISK="${BASH_REMATCH[1]}"
+  else
+    INSTALL_DISK="$INSTALL_TARGET"
+  fi
+fi
+
+# Set mount point if not already set
+MOUNT_POINT="${MOUNT_POINT:-/mnt}"
 
 # Display configuration summary
 echo ""
@@ -312,6 +341,9 @@ echo "Hostname:        $HOSTNAME"
 echo "Install Target:  $INSTALL_TARGET"
 echo "Parent Disk:     $INSTALL_DISK"
 echo "Mount Point:     $MOUNT_POINT"
+[[ -n "$EFI_PARTITION" ]] && echo "EFI Partition:   $EFI_PARTITION -> $EFI_MOUNT"
+[[ -n "$SWAP_PARTITION" ]] && echo "Swap Partition:  $SWAP_PARTITION"
+[[ -n "$HOME_PARTITION" ]] && echo "Home Partition:  $HOME_PARTITION"
 echo "=========================================="
 echo ""
 read -p "Proceed with installation? (yes/NO): " -r
@@ -325,21 +357,53 @@ echo ""
 echo "Starting Ionix installation..."
 
 # ========================================
-# Mount partition
+# Mount partitions
 # ========================================
 
 echo ""
-echo "Mounting $INSTALL_TARGET to $MOUNT_POINT..."
+echo "Mounting partitions..."
 
 # Create mount point if it doesn't exist
 mkdir -p "$MOUNT_POINT"
 
-# Mount the partition
+# Mount root partition
 if mount "$INSTALL_TARGET" "$MOUNT_POINT"; then
-  echo "✓ Partition mounted successfully."
+  echo "✓ Root partition mounted to $MOUNT_POINT"
 else
-  echo "Error: Failed to mount partition."
+  echo "Error: Failed to mount root partition."
   exit 1
+fi
+
+# Mount EFI partition if it exists
+if [[ -n "$EFI_PARTITION" && -n "$EFI_MOUNT" ]]; then
+  echo "Mounting EFI partition..."
+  mkdir -p "$MOUNT_POINT$EFI_MOUNT"
+  if mount "$EFI_PARTITION" "$MOUNT_POINT$EFI_MOUNT"; then
+    echo "✓ EFI partition mounted to $MOUNT_POINT$EFI_MOUNT"
+  else
+    echo "Warning: Failed to mount EFI partition."
+  fi
+fi
+
+# Mount home partition if it exists
+if [[ -n "$HOME_PARTITION" ]]; then
+  echo "Mounting home partition..."
+  mkdir -p "$MOUNT_POINT/home"
+  if mount "$HOME_PARTITION" "$MOUNT_POINT/home"; then
+    echo "✓ Home partition mounted to $MOUNT_POINT/home"
+  else
+    echo "Warning: Failed to mount home partition."
+  fi
+fi
+
+# Enable swap if it exists
+if [[ -n "$SWAP_PARTITION" ]]; then
+  echo "Enabling swap..."
+  if swapon "$SWAP_PARTITION"; then
+    echo "✓ Swap enabled on $SWAP_PARTITION"
+  else
+    echo "Warning: Failed to enable swap."
+  fi
 fi
 
 # ========================================
@@ -370,6 +434,10 @@ HOSTNAME="$HOSTNAME"
 INSTALL_TARGET="$INSTALL_TARGET"
 INSTALL_DISK="$INSTALL_DISK"
 MOUNT_POINT="$MOUNT_POINT"
+EFI_PARTITION="${EFI_PARTITION:-}"
+EFI_MOUNT="${EFI_MOUNT:-}"
+SWAP_PARTITION="${SWAP_PARTITION:-}"
+HOME_PARTITION="${HOME_PARTITION:-}"
 EOF
 
 echo "✓ Configuration saved to $MOUNT_POINT/root/ionix/ionix.conf"
