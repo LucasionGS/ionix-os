@@ -116,11 +116,8 @@
     "snap-store"
   ],
   "other": {
-    "omf": [
-      "wget -q https://raw.githubusercontent.com/oh-my-fish/oh-my-fish/master/bin/install -O /tmp/omf-install",
-      "chmod +x /tmp/omf-install",
-      "fish -c '/tmp/omf-install --noninteractive --yes'",
-      "rm -f /tmp/omf-install"
+    "oh-my-posh": [
+      "curl -s https://ohmyposh.dev/install.sh | sudo bash -s -- -d /usr/local/bin"
     ],
     "deno": [
       "wget -q https://deno.land/install.sh -O /tmp/deno-install.sh",
@@ -128,10 +125,10 @@
       "rm -f /tmp/deno-install.sh"
     ],
     "zoxide": [
-      "curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh"
+      "curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sudo sh -s -- --bin-dir /usr/local/bin --man-dir /usr/local/share/man"
     ],
     "nvchad": [
-      "git clone https://github.com/LucasionGS/nvim-nvchad ~/.config/nvim"
+      "git clone https://github.com/LucasionGS/nvim-nvchad /etc/skel/.config/nvim"
     ],
     "rofi-themes": [
       "git clone --depth=1 https://github.com/adi1090x/rofi.git /tmp/rofi-custom",

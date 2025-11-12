@@ -32,4 +32,6 @@ source ~/.apps/fssh/fssh.fish
 # Source zoxide for the z command
 zoxide init fish | source
 
+oh-my-posh init fish --config 'bubbles' | source
+
 alias s="kitten ssh"

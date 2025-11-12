@@ -84,26 +84,6 @@ interactive_config() {
 # Here we do all of the installation of the Ionix OS packages and configuration
 boot::install_ionix_os() {
   local curDir="$(pwd)"
-  # If yay bin doesn't exist, install it
-  if ! command -v yay &> /dev/null; then
-    echo "Installing yay AUR helper..."
-    echo "This will allow us to install packages from the Arch User Repository"
-    
-    if git clone https://aur.archlinux.org/yay.git /tmp/yay; then
-      cd /tmp/yay
-      if makepkg -si --noconfirm; then
-        echo "✓ Yay AUR helper installed successfully"
-      else
-        echo "Error: Failed to build and install yay"
-      fi
-      cd "$curDir"
-      rm -rf /tmp/yay
-    else
-      echo "Error: Failed to clone yay repository"
-    fi
-  else
-    echo "✓ Yay already installed, skipping..."
-  fi
 
   # Install Ionix OS packages based on config/packages.json
   local packages_file="$SCRIPT_DIR/config/packages.json"
@@ -173,6 +153,23 @@ boot::install_ionix_os() {
       # Set no password
       echo "ionix_aur ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ionix_aur
       chmod 440 /etc/sudoers.d/ionix_aur
+    fi
+
+    # If yay bin doesn't exist, install it
+  echo "Installing yay AUR helper..."
+  echo "This will allow us to install packages from the Arch User Repository"
+  
+    if git clone https://aur.archlinux.org/yay.git /tmp/yay; then
+      cd /tmp/yay
+      if sudo -u ionix_aur makepkg -si --noconfirm; then
+        echo "✓ Yay AUR helper installed successfully"
+      else
+        echo "Error: Failed to build and install yay"
+      fi
+      cd "$curDir"
+      rm -rf /tmp/yay
+    else
+      echo "Error: Failed to clone yay repository"
     fi
 
     echo "Packages to install:"
@@ -282,34 +279,46 @@ boot::install_ionix_os() {
   echo "🐟 Installing Fish shell plugins..."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   
-  local fish_plugins
-  fish_plugins=$(jq -r '.fish_plugins[]' "$packages_file" 2>/dev/null)
-  
-  if [[ -n "$fish_plugins" ]]; then
-    echo "Plugins to install:"
-    echo "$fish_plugins" | sed 's/^/  - /'
-    echo ""
-    
-    while IFS= read -r plugin; do
-      # Check if it's a theme or a package
-      if [[ "$plugin" == "bobthefish" ]]; then
-        echo "Installing and activating theme: $plugin"
-        if fish -c "omf install $plugin && omf theme $plugin"; then
-          echo "✓ Theme $plugin installed and activated"
-        else
-          echo "Warning: Failed to install theme: $plugin"
-        fi
-      else
-        echo "Installing plugin: $plugin"
-        if fish -c "fisher install $plugin"; then
-          echo "✓ Plugin $plugin installed"
-        else
-          echo "Warning: Failed to install plugin: $plugin"
-        fi
-      fi
-    done <<< "$fish_plugins"
+  # Check if OMF is installed
+  if ! fish -c "command -v omf" &>/dev/null; then
+    echo "Warning: Oh My Fish (omf) not found. Install it via 'other.omf' first."
+    echo "Skipping fish plugin installation."
   else
-    echo "No Fish plugins to install"
+    local fish_plugins
+    fish_plugins=$(jq -r '.fish_plugins[]' "$packages_file" 2>/dev/null)
+    
+    if [[ -n "$fish_plugins" ]]; then
+      echo "Plugins to install:"
+      echo "$fish_plugins" | sed 's/^/  - /'
+      echo ""
+      
+      while IFS= read -r plugin; do
+        # Check if it's a known OMF theme
+        if [[ "$plugin" =~ ^[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$ ]]; then
+          echo "Installing Fisher plugin: $plugin"
+          if fish -c "fisher install $plugin"; then
+            echo "  ✓ Plugin installed"
+          else
+            echo "  Warning: Failed to install plugin: $plugin"
+          fi
+        # Try OMF first, then Fisher
+        else
+          echo "Installing plugin: $plugin"
+          if fish -c "omf install $plugin"; then
+            echo "  ✓ Plugin installed (via OMF)"
+          elif fish -c "fisher install $plugin"; then
+            echo "  ✓ Plugin installed (via Fisher)"
+          else
+            echo "  Warning: Failed to install plugin: $plugin"
+          fi
+        fi
+      done <<< "$fish_plugins"
+      
+      echo ""
+      echo "✓ Fish plugin installation complete"
+    else
+      echo "No Fish plugins to install"
+    fi
   fi
   
   echo ""
