@@ -188,36 +188,6 @@ select_locale() {
   fi
 }
 
-# Function: Set hostname
-select_hostname() {
-  # Disable errors temporarily
-  set +e
-  echo ""
-  echo "Setting hostname..."
-  
-  # Interactive prompt for hostname
-  while true; do
-    read -p "Enter hostname for this system: " HOSTNAME
-    
-    if [[ -z "$HOSTNAME" ]]; then
-      echo "Error: Hostname cannot be empty."
-      continue
-    fi
-    
-    # Validate hostname (RFC 1178)
-    if [[ ! "$HOSTNAME" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]]; then
-      echo "Error: Invalid hostname. Use only letters, numbers, and hyphens."
-      echo "       Must start and end with a letter or number."
-      continue
-    fi
-    
-    echo "✓ Hostname set to: $HOSTNAME"
-    break
-  done
-  # Re-enable error handling
-  set -e
-}
-
 # Function: Select installation partition
 select_partition() {
   echo ""
@@ -302,7 +272,6 @@ select_partition() {
 select_keyboard_layout
 select_timezone
 select_locale
-select_hostname
 
 # Disk partitioning
 disk::partition_interactive || {
