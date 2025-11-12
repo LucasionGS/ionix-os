@@ -145,7 +145,7 @@ boot::install_ionix_os() {
       pkg_array+=("$pkg")
     done <<< "$pacman_packages"
     
-    if pacman -S --noconfirm --needed "${pkg_array[@]}"; then
+    if pacman -Syu --noconfirm --needed "${pkg_array[@]}"; then
       echo "✓ Pacman packages installed successfully"
     else
       echo "Warning: Some pacman packages failed to install"
@@ -173,7 +173,7 @@ boot::install_ionix_os() {
       aur_array+=("$pkg")
     done <<< "$aur_packages"
     
-    if yay -S --noconfirm --needed "${aur_array[@]}"; then
+    if yay -Sy --noconfirm --needed "${aur_array[@]}"; then
       echo "✓ AUR packages installed successfully"
     else
       echo "Warning: Some AUR packages failed to install"

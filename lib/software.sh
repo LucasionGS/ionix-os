@@ -19,9 +19,9 @@ sw::is_installed() {
 sw::install() {
   local packages=("$@")
   if [ "$IONIX_PACKAGE_MANAGER" = "pacman" ] || [ -z "$IONIX_PACKAGE_MANAGER" ]; then
-    sudo pacman -Syu $IONIX_PACMAN_OPTIONS "${packages[@]}"
+    sudo pacman -Sy $IONIX_PACMAN_OPTIONS "${packages[@]}"
   elif [ "$IONIX_PACKAGE_MANAGER" = "yay" ]; then
-    yay -Syu $IONIX_PACMAN_OPTIONS "${packages[@]}"
+    yay -Sy $IONIX_PACMAN_OPTIONS "${packages[@]}"
   else
     echo "Error: Unsupported package manager '$IONIX_PACKAGE_MANAGER'."
     exit 1

@@ -3,7 +3,7 @@
 
 set -e
 # Download and run the install script
-sudo pacman -Syu --noconfirm --needed git curl wget
+sudo pacman -Sy --noconfirm --needed git curl wget
 git clone https://github.com/LucasionGS/ionix-os.git
 cd ionix-os
 

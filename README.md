@@ -21,7 +21,7 @@ Before running the installation:
 
 1. **Boot into a live Arch Linux environment** (e.g., from USB)
 2. **Ensure you have internet connectivity**
-3. **Have `curl` installed** (sudo pacman -Syu curl)
+3. **Have `curl` installed** (sudo pacman -Sy curl)
 4. **Execute**
 ```bash
 curl -sSL https://raw.githubusercontent.com/LucasionGS/ionix-os/main/bootstrap.sh | bash
