@@ -1,0 +1,11 @@
+/* Allow WiFi operations without password prompt */
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.NetworkManager.wifi.scan" ||
+         action.id == "org.freedesktop.NetworkManager.enable-disable-wifi" ||
+         action.id == "org.freedesktop.NetworkManager.settings.modify.own" ||
+         action.id == "org.freedesktop.NetworkManager.settings.modify.system" ||
+         action.id == "org.freedesktop.NetworkManager.network-control") &&
+        subject.isInGroup("sudo")) {
+        return polkit.Result.YES;
+    }
+});

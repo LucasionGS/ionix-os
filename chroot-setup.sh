@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/configure.sh"
 source "$SCRIPT_DIR/lib/users.sh"
 source "$SCRIPT_DIR/lib/bootloader.sh"
+source "$SCRIPT_DIR/lib/graphics.sh"
 
 echo ""
 echo "=========================================="
@@ -162,7 +163,18 @@ boot::install_ionix_os() {
   local aur_packages
   aur_packages=$(jq -r '.aur[]' "$packages_file" 2>/dev/null)
   
+  
   if [[ -n "$aur_packages" ]]; then
+    # Create temporary user for AUR builds if needed
+    if ! id -u ionix_aur &> /dev/null; then
+      echo "Creating temporary user 'ionix_aur' for AUR builds..."
+      useradd -m -G wheel ionix_aur
+
+      # Set no password
+      echo "ionix_aur ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/ionix_aur
+      chmod 440 /etc/sudoers.d/ionix_aur
+    fi
+
     echo "Packages to install:"
     echo "$aur_packages" | sed 's/^/  - /'
     echo ""
@@ -172,14 +184,21 @@ boot::install_ionix_os() {
     while IFS= read -r pkg; do
       aur_array+=("$pkg")
     done <<< "$aur_packages"
-    
-    if yay -Sy --noconfirm --needed "${aur_array[@]}"; then
+
+    if sudo -u ionix_aur yay -Sy --noconfirm --needed "${aur_array[@]}"; then
       echo "✓ AUR packages installed successfully"
     else
       echo "Warning: Some AUR packages failed to install"
     fi
   else
     echo "No AUR packages to install"
+  fi
+
+  # Remove temporary AUR user
+  if id -u ionix_aur &> /dev/null; then
+    echo "Removing temporary user 'ionix_aur'..."
+    userdel -r ionix_aur
+    rm -f /etc/sudoers.d/ionix_aur
   fi
   
   # 3. Install Snap packages
@@ -299,6 +318,13 @@ boot::install_ionix_os() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   
   cd "$curDir"
+
+  # Copy all the files in ./root/ to /
+  echo ""
+  echo "Copying default root files to / recursively..."
+  local root_files_dir="$SCRIPT_DIR/root"
+  # Install root files with "install"
+  rsync -a "$root_files_dir"/ /
 }
 
 # Main execution
@@ -355,12 +381,24 @@ main() {
 
   # Install the actual system of Ionix (lol)
   boot::install_ionix_os
+
+  # Graphics driver setup
+  echo ""
+  gpu::select_interactive || {
+    echo "Warning: Graphics selection failed."
+  }
   
+  if [[ -n "$GPU_VENDOR" && "$GPU_VENDOR" != "skip" ]]; then
+    gpu::install "$GPU_VENDOR" || {
+      echo "Warning: Graphics driver installation failed."
+    }
+  fi
+
   # User setup
   user::setup_interactive || {
     echo "Warning: User setup incomplete."
   }
-  
+
   # Bootloader setup
   boot::setup_interactive || {
     echo "Error: Bootloader setup failed."

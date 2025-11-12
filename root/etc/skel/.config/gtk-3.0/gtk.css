@@ -1,0 +1,431 @@
+/* Nemo File Manager Theme */
+/* Matches AGS styling with colors: bg=#1b1e2f, fg=#f1f1f1, accent=#4e27b1, secondary=#c46e12 */
+
+/* Main window styling */
+.nemo-window {
+    background-color: #1b1e2f;
+    color: #f1f1f1;
+}
+
+/* Toolbar styling */
+.nemo-window toolbar {
+    background-color: #1b1e2f;
+    border-bottom: 1px solid rgba(241, 241, 241, 0.1);
+    padding: 8px;
+}
+
+.nemo-window toolbar button {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #f1f1f1;
+    padding: 8px 12px;
+    margin: 0 2px;
+}
+
+.nemo-window toolbar button:hover {
+    background-color: rgba(196, 110, 18, 0.1);
+    border-color: rgba(196, 110, 18, 0.5);
+    color: #c46e12;
+}
+
+.nemo-window toolbar button:active {
+    background-color: rgba(196, 110, 18, 0.2);
+    border-color: #c46e12;
+}
+
+/* Sidebar styling */
+.nemo-places-sidebar {
+    background-color: rgba(27, 30, 47, 0.8);
+    border-right: 1px solid rgba(241, 241, 241, 0.1);
+    color: #f1f1f1;
+}
+
+/* TreeView in the sidebar */
+.nemo-places-sidebar .places-treeview {
+    background-color: transparent;
+    color: #f1f1f1;
+}
+
+/* TreeView rows (sidebar shortcuts) */
+.nemo-places-sidebar .places-treeview row {
+    background-color: transparent;
+    border-radius: 7px;
+    margin: 3px 4px;
+    padding: 12px 8px;
+    min-height: 40px;
+    font-size: 1.1em;
+}
+
+.nemo-places-sidebar .places-treeview row:hover {
+    background-color: rgba(196, 110, 18, 0.08);
+    border: 1px solid rgba(196, 110, 18, 0.3);
+}
+
+.nemo-places-sidebar .places-treeview row:selected {
+    background-color: rgba(78, 39, 177, 0.2);
+    border: 1px solid #4e27b1;
+    color: #4e27b1;
+}
+
+/* Location bar / breadcrumb styling */
+.nemo-window .location-bar {
+    background-color: rgba(27, 30, 47, 0.6);
+    border: 1px solid rgba(241, 241, 241, 0.1);
+    border-radius: 7px;
+    color: #f1f1f1;
+    padding: 6px 12px;
+}
+
+.nemo-window .location-bar button {
+    background-color: transparent;
+    border: none;
+    border-radius: 5px;
+    color: #f1f1f1;
+    padding: 4px 8px;
+}
+
+.nemo-window .location-bar button:hover {
+    background-color: rgba(241, 241, 241, 0.1);
+    color: #c46e12;
+}
+
+/* Main view area */
+.nemo-window .view {
+    background-color: #1b1e2f;
+    color: #f1f1f1;
+}
+
+/* File/folder items in icon view */
+.nemo-window iconview {
+    background-color: transparent;
+    color: #f1f1f1;
+}
+
+.nemo-window iconview:selected {
+    background-color: rgba(78, 39, 177, 0.3);
+    border-radius: 7px;
+}
+
+.nemo-window iconview:selected:focus {
+    background-color: rgba(78, 39, 177, 0.4);
+}
+
+/* File/folder items in list view */
+.nemo-window treeview {
+    background-color: transparent;
+    color: #f1f1f1;
+}
+
+.nemo-window treeview:selected {
+    background-color: rgba(78, 39, 177, 0.3);
+    color: #f1f1f1;
+}
+
+.nemo-window treeview:selected:focus {
+    background-color: rgba(78, 39, 177, 0.4);
+}
+
+.nemo-window treeview header button {
+    background-color: rgba(27, 30, 47, 0.8);
+    border: 1px solid rgba(241, 241, 241, 0.1);
+    border-radius: 0;
+    color: #f1f1f1;
+    padding: 8px 12px;
+}
+
+.nemo-window treeview header button:hover {
+    background-color: rgba(196, 110, 18, 0.08);
+    border-color: rgba(196, 110, 18, 0.3);
+    color: #c46e12;
+}
+
+/* Status bar */
+.nemo-window statusbar {
+    background-color: rgba(27, 30, 47, 0.8);
+    border-top: 1px solid rgba(241, 241, 241, 0.1);
+    color: #f1f1f1;
+    padding: 4px 12px;
+}
+
+/* Context menus */
+.nemo-window menu {
+    background-color: #1b1e2f;
+    border: 1px solid rgba(241, 241, 241, 0.2);
+    border-radius: 7px;
+    color: #f1f1f1;
+    padding: 4px;
+}
+
+.nemo-window menuitem {
+    background-color: transparent;
+    border-radius: 5px;
+    color: #f1f1f1;
+    padding: 8px 12px;
+    margin: 1px;
+}
+
+.nemo-window menuitem:hover {
+    background-color: rgba(196, 110, 18, 0.2);
+    color: #c46e12;
+}
+
+.nemo-window menuitem:selected {
+    background-color: rgba(196, 110, 18, 0.3);
+    color: #c46e12;
+}
+
+/* Scrollbars */
+.nemo-window scrollbar {
+    background-color: transparent;
+}
+
+.nemo-window scrollbar slider {
+    background-color: rgba(241, 241, 241, 0.2);
+    border-radius: 7px;
+    border: none;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+.nemo-window scrollbar slider:hover {
+    background-color: rgba(196, 110, 18, 0.4);
+}
+
+.nemo-window scrollbar slider:active {
+    background-color: rgba(196, 110, 18, 0.6);
+}
+
+/* Search bar */
+.nemo-window searchbar {
+    background-color: rgba(27, 30, 47, 0.8);
+    border: 1px solid rgba(241, 241, 241, 0.1);
+    border-radius: 7px;
+    color: #f1f1f1;
+}
+
+.nemo-window searchbar entry {
+    background-color: transparent;
+    border: none;
+    color: #f1f1f1;
+    padding: 8px 12px;
+}
+
+.nemo-window searchbar entry:focus {
+    background-color: rgba(196, 110, 18, 0.05);
+    outline: 1px solid #c46e12;
+    outline-offset: -1px;
+}
+
+/* Entry fields and text inputs */
+.nemo-window entry {
+    background-color: rgba(27, 30, 47, 0.8);
+    border: 1px solid rgba(241, 241, 241, 0.2);
+    border-radius: 7px;
+    color: #f1f1f1;
+    padding: 8px 12px;
+}
+
+.nemo-window entry:focus {
+    background-color: rgba(27, 30, 47, 0.9);
+    border-color: #c46e12;
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(196, 110, 18, 0.3);
+}
+
+/* Properties dialog and other dialogs */
+.nemo-window dialog {
+    background-color: #1b1e2f;
+    color: #f1f1f1;
+}
+
+.nemo-window dialog headerbar {
+    background-color: rgba(27, 30, 47, 0.9);
+    border-bottom: 1px solid rgba(241, 241, 241, 0.1);
+    color: #f1f1f1;
+}
+
+.nemo-window dialog button {
+    background-color: rgba(27, 30, 47, 0.6);
+    border: 1px solid rgba(241, 241, 241, 0.2);
+    border-radius: 7px;
+    color: #f1f1f1;
+    padding: 8px 16px;
+}
+
+.nemo-window dialog button:hover {
+    background-color: rgba(196, 110, 18, 0.1);
+    border-color: rgba(196, 110, 18, 0.5);
+    color: #c46e12;
+}
+
+.nemo-window dialog button:active {
+    background-color: rgba(196, 110, 18, 0.2);
+    border-color: #c46e12;
+}
+
+.nemo-window dialog button.suggested-action {
+    background-color: rgba(78, 39, 177, 0.8);
+    border-color: #4e27b1;
+    color: #f1f1f1;
+}
+
+.nemo-window dialog button.suggested-action:hover {
+    background-color: #4e27b1;
+}
+
+.nemo-window dialog button.destructive-action {
+    background-color: rgba(255, 0, 0, 0.8);
+    border-color: #ff0000;
+    color: #f1f1f1;
+}
+
+.nemo-window dialog button.destructive-action:hover {
+    background-color: #ff0000;
+}
+
+/* Path bar (breadcrumb navigation) */
+.nemo-window .path-bar button {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: #f1f1f1;
+    padding: 6px 10px;
+}
+
+.nemo-window .path-bar button:hover {
+    background-color: rgba(241, 241, 241, 0.1);
+    border-color: rgba(196, 110, 18, 0.3);
+    color: #c46e12;
+}
+
+.nemo-window .path-bar button:active {
+    background-color: rgba(196, 110, 18, 0.2);
+    border-color: #c46e12;
+}
+
+/* Notebook tabs (if multiple tabs are open) */
+.nemo-window notebook tab {
+    background-color: rgba(27, 30, 47, 0.6);
+    border: 1px solid rgba(241, 241, 241, 0.1);
+    border-bottom: none;
+    border-radius: 7px 7px 0 0;
+    color: #f1f1f1;
+    padding: 8px 16px;
+}
+
+.nemo-window notebook tab:hover {
+    background-color: rgba(196, 110, 18, 0.08);
+    border-color: rgba(196, 110, 18, 0.3);
+}
+
+.nemo-window notebook tab:checked {
+    background-color: rgba(78, 39, 177, 0.2);
+    border-color: #4e27b1;
+    color: #4e27b1;
+}
+
+/* Drag and drop visual feedback */
+.nemo-window.drag-highlight {
+    background-color: rgba(78, 39, 177, 0.1);
+    border: 2px dashed #4e27b1;
+}
+
+/* Progress bars (for file operations) */
+.nemo-window progressbar {
+    background-color: rgba(27, 30, 47, 0.8);
+    border-radius: 7px;
+}
+
+.nemo-window progressbar progress {
+    background: linear-gradient(90deg, #c46e12, #4e27b1);
+    border-radius: 7px;
+}
+
+/* Tooltips */
+.nemo-window tooltip {
+    background-color: rgba(27, 30, 47, 0.95);
+    border: 1px solid rgba(241, 241, 241, 0.2);
+    border-radius: 7px;
+    color: #f1f1f1;
+    padding: 6px 10px;
+}
+
+/* Fix text selection colors */
+.nemo-window *:selected {
+    background-color: rgba(78, 39, 177, 0.3);
+    color: #f1f1f1;
+}
+
+/* Additional orange accent styling */
+.nemo-places-sidebar .places-sidebar-icon {
+    color: #c46e12;
+}
+
+.nemo-window toolbar .linked > button:hover {
+    border-color: #c46e12;
+    background-color: rgba(196, 110, 18, 0.1);
+}
+
+.nemo-window .floating-bar {
+    background-color: rgba(196, 110, 18, 0.9);
+    border: 1px solid #c46e12;
+    border-radius: 7px;
+    color: #f1f1f1;
+}
+
+.nemo-window .floating-bar button {
+    background-color: rgba(196, 110, 18, 0.8);
+    border-color: #c46e12;
+    color: #f1f1f1;
+}
+
+.nemo-window .floating-bar button:hover {
+    background-color: #c46e12;
+}
+
+.nemo-window infobar {
+    background-color: rgba(196, 110, 18, 0.2);
+    border: 1px solid rgba(196, 110, 18, 0.5);
+    border-radius: 7px;
+    color: #c46e12;
+}
+
+.nemo-window infobar button {
+    background-color: rgba(196, 110, 18, 0.8);
+    border-color: #c46e12;
+    color: #f1f1f1;
+}
+
+/* Orange highlights for special file types */
+.nemo-window iconview .executable {
+    color: #c46e12;
+}
+
+.nemo-window treeview .executable {
+    color: #c46e12;
+}
+
+/* Additional TreeView cell styling for places sidebar */
+.places-treeview {
+    background-color: transparent;
+    -NemoPlacesTreeView-disk-full-bg-color: rgba(196, 110, 18, 0.3);
+    -NemoPlacesTreeView-disk-full-fg-color: #c46e12;
+    -NemoPlacesTreeView-disk-full-bar-width: 3px;
+    -NemoPlacesTreeView-disk-full-bar-radius: 2px;
+    -NemoPlacesTreeView-disk-full-bottom-padding: 2px;
+    -NemoPlacesTreeView-disk-full-max-length: 80px;
+}
+
+.places-treeview:selected {
+    -NemoPlacesTreeView-disk-full-bg-color: rgba(78, 39, 177, 0.4);
+    -NemoPlacesTreeView-disk-full-fg-color: #4e27b1;
+}
+
+.places-treeview:hover {
+    background-color: rgba(196, 110, 18, 0.05);
+}
+
+.places-treeview:selected:hover {
+    background-color: rgba(78, 39, 177, 0.15);
+}

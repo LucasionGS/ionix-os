@@ -1,0 +1,77 @@
+window {
+    background-color: #1b1e2f;
+    color: #f1f1f1;
+}
+
+#clock {
+    color: #f1f1f1;
+}
+
+#input-label {
+    color: #f1f1f1;
+}
+
+#unlock-button {
+    background-color: #4e27b1;
+    color: #f1f1f1;
+    border: none;
+    border-radius: 7px;
+}
+
+#unlock-button:hover {
+    background-color: #5f38c2;
+}
+
+#unlock-button:active {
+    background-color: #3d1e90;
+}
+
+entry {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f1f1f1;
+    border: none;
+    border-radius: 7px;
+}
+
+entry:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid #4e27b1;
+}
+
+#sessions {
+    background-color: #1b1e2f;
+    border: 1px solid #4e27b1;
+    border-radius: 7px;
+}
+
+button {
+    background-color: transparent;
+    color: #f1f1f1;
+    border: none;
+}
+
+button:hover {
+    background-color: rgba(78, 39, 177, 0.3);
+}
+
+button:active {
+    background-color: rgba(78, 39, 177, 0.5);
+}
+
+/* Power buttons styling */
+button.power {
+    background-color: #c46e12;
+    color: #f1f1f1;
+    border: none;
+    border-radius: 7px;
+}
+
+button.power:hover {
+    background-color: #d57d21;
+}
+
+button.power:active {
+    background-color: #b36010;
+}
+
+/* The overall layout is controlled by GTKGreet defaults */

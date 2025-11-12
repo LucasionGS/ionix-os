@@ -1,0 +1,4 @@
+# Ignore all files in the config/fish directory because many get added automatically, so this helps when using soft links.
+*
+!config.fish
+!.gitignore
