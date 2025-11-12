@@ -1,6 +1,23 @@
 # Namespace: disk
 # Disk partitioning and management functions for Ionix installation.
 
+# Function: disk::get_partition
+# Get proper partition name based on disk type.
+# Args: disk device, partition number
+# Returns: partition device name
+disk::get_partition() {
+  local disk="$1"
+  local part_num="$2"
+  
+  if [[ $disk =~ [0-9]$ ]]; then
+    # NVMe or similar: /dev/nvme0n1 -> /dev/nvme0n1p1
+    echo "${disk}p${part_num}"
+  else
+    # Regular disk: /dev/sda -> /dev/sda1
+    echo "${disk}${part_num}"
+  fi
+}
+
 # Function: disk::select_disk
 # Interactive disk selection for installation.
 # Sets global variable: INSTALL_DISK
@@ -68,7 +85,7 @@ disk::select_disk() {
 
 # Function: disk::partition_auto
 # Automatically partition disk with sensible defaults.
-# For UEFI: 512M EFI + rest root
+# For UEFI: 550M EFI + rest root
 # For BIOS: rest root (with BIOS boot if GPT)
 disk::partition_auto() {
   local disk="$1"
@@ -89,95 +106,158 @@ disk::partition_auto() {
   fi
   
   echo ""
+  echo "⚠ WARNING: This will completely erase $disk!"
+  echo ""
+  read -p "Type 'YES' to confirm: " confirm
+  if [[ "$confirm" != "YES" ]]; then
+    echo "Operation cancelled."
+    return 1
+  fi
+  
+  echo ""
   echo "Wiping disk $disk..."
   wipefs -af "$disk" || {
     echo "Error: Failed to wipe disk."
     return 1
   }
   
+  echo "Zeroing partition table..."
+  sgdisk -Z "$disk" || {
+    echo "Error: Failed to zero partition table."
+    return 1
+  }
+  
   if [[ "$FIRMWARE_TYPE" == "uefi" ]]; then
     echo "Creating GPT partition table for UEFI..."
     
-    # Create GPT table and partitions using parted
-    parted -s "$disk" mklabel gpt || return 1
-    parted -s "$disk" mkpart primary fat32 1MiB 513MiB || return 1
-    parted -s "$disk" set 1 esp on || return 1
-    parted -s "$disk" mkpart primary ext4 513MiB 100% || return 1
-    
-    # Wait for kernel to recognize partitions
-    sleep 2
-    partprobe "$disk"
-    sleep 1
-    
-    # Determine partition names
-    if [[ "$disk" =~ nvme ]]; then
-      EFI_PARTITION="${disk}p1"
-      ROOT_PARTITION="${disk}p2"
+    # Create EFI System Partition (550 MiB)
+    echo "Creating EFI System Partition (550 MiB)..."
+    if sgdisk -n1:0:+550MiB -t1:ef00 -c1:"EFI System Partition" "$disk"; then
+      echo "✓ EFI partition created"
     else
-      EFI_PARTITION="${disk}1"
-      ROOT_PARTITION="${disk}2"
+      echo "Error: Failed to create EFI partition"
+      return 1
     fi
     
+    # Create root partition (remaining space)
+    echo "Creating root partition (remaining space)..."
+    if sgdisk -n2:0:0 -t2:8300 -c2:"Arch Linux root" "$disk"; then
+      echo "✓ Root partition created"
+    else
+      echo "Error: Failed to create root partition"
+      return 1
+    fi
+    
+    # Update partition table
+    echo "Updating partition table..."
+    partprobe "$disk" || {
+      echo "Warning: partprobe failed, trying to continue..."
+    }
+    sleep 2
+    
+    # Determine partition names using helper function
+    EFI_PARTITION=$(disk::get_partition "$disk" 1)
+    ROOT_PARTITION=$(disk::get_partition "$disk" 2)
+    
     echo "✓ Partitions created:"
-    echo "  EFI:  $EFI_PARTITION (512M)"
+    echo "  EFI:  $EFI_PARTITION (550M)"
     echo "  Root: $ROOT_PARTITION (remaining space)"
+    
+    # Verify partitions exist
+    if [[ ! -b "$EFI_PARTITION" ]]; then
+      echo "Error: EFI partition $EFI_PARTITION not found after creation"
+      return 1
+    fi
+    if [[ ! -b "$ROOT_PARTITION" ]]; then
+      echo "Error: Root partition $ROOT_PARTITION not found after creation"
+      return 1
+    fi
     
     # Format partitions
     echo ""
-    echo "Formatting EFI partition..."
-    mkfs.fat -F32 "$EFI_PARTITION" || {
-      echo "Error: Failed to format EFI partition."
+    echo "Formatting EFI partition as FAT32..."
+    if mkfs.fat -F32 "$EFI_PARTITION"; then
+      echo "✓ EFI partition formatted"
+    else
+      echo "Error: Failed to format EFI partition"
       return 1
-    }
+    fi
     
-    echo "Formatting root partition..."
-    mkfs.ext4 -F "$ROOT_PARTITION" || {
-      echo "Error: Failed to format root partition."
+    echo "Formatting root partition as ext4..."
+    if mkfs.ext4 -F "$ROOT_PARTITION"; then
+      echo "✓ Root partition formatted"
+    else
+      echo "Error: Failed to format root partition"
       return 1
-    }
+    fi
     
-    echo "✓ Partitions formatted successfully."
+    echo "✓ Partitions formatted successfully"
     
     # Set global variables for later use
     INSTALL_TARGET="$ROOT_PARTITION"
     EFI_MOUNT="/boot"
     
   else
-    # BIOS system - simple MBR
+    # BIOS system - use MBR
     echo "Creating MBR partition table for BIOS..."
     
-    parted -s "$disk" mklabel msdos || return 1
-    parted -s "$disk" mkpart primary ext4 1MiB 100% || return 1
-    parted -s "$disk" set 1 boot on || return 1
+    # Create MBR/DOS partition table
+    parted -s "$disk" mklabel msdos || {
+      echo "Error: Failed to create MBR partition table"
+      return 1
+    }
     
-    # Wait for kernel to recognize partitions
+    # Create single root partition
+    parted -s "$disk" mkpart primary ext4 1MiB 100% || {
+      echo "Error: Failed to create partition"
+      return 1
+    }
+    
+    # Set boot flag
+    parted -s "$disk" set 1 boot on || {
+      echo "Error: Failed to set boot flag"
+      return 1
+    }
+    
+    # Update partition table
+    echo "Updating partition table..."
+    partprobe "$disk" || {
+      echo "Warning: partprobe failed, trying to continue..."
+    }
     sleep 2
-    partprobe "$disk"
-    sleep 1
     
-    # Determine partition name
-    if [[ "$disk" =~ nvme ]]; then
-      ROOT_PARTITION="${disk}p1"
-    else
-      ROOT_PARTITION="${disk}1"
-    fi
+    # Determine partition name using helper function
+    ROOT_PARTITION=$(disk::get_partition "$disk" 1)
     
     echo "✓ Partition created:"
     echo "  Root: $ROOT_PARTITION (entire disk)"
     
+    # Verify partition exists
+    if [[ ! -b "$ROOT_PARTITION" ]]; then
+      echo "Error: Root partition $ROOT_PARTITION not found after creation"
+      return 1
+    fi
+    
     # Format partition
     echo ""
-    echo "Formatting root partition..."
-    mkfs.ext4 -F "$ROOT_PARTITION" || {
-      echo "Error: Failed to format root partition."
+    echo "Formatting root partition as ext4..."
+    if mkfs.ext4 -F "$ROOT_PARTITION"; then
+      echo "✓ Root partition formatted"
+    else
+      echo "Error: Failed to format root partition"
       return 1
-    }
+    fi
     
-    echo "✓ Partition formatted successfully."
+    echo "✓ Partition formatted successfully"
     
     # Set global variables
     INSTALL_TARGET="$ROOT_PARTITION"
   fi
+  
+  # Show final layout
+  echo ""
+  echo "Final partition layout:"
+  lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT "$disk"
   
   return 0
 }
@@ -226,6 +306,20 @@ disk::partition_preset() {
   echo "Wiping disk $disk..."
   wipefs -af "$disk" || return 1
   
+  echo ""
+  echo "⚠ WARNING: This will completely erase $disk!"
+  echo ""
+  read -p "Type 'YES' to confirm: " confirm
+  if [[ "$confirm" != "YES" ]]; then
+    echo "Operation cancelled."
+    return 1
+  fi
+  
+  echo ""
+  echo "Wiping disk..."
+  wipefs -af "$disk" || return 1
+  sgdisk -Z "$disk" || return 1
+  
   case $preset in
     1)
       # Minimal - same as auto
@@ -239,126 +333,151 @@ disk::partition_preset() {
       echo "Creating standard partition layout (with ${swap_size_gb}GB swap)..."
       
       if [[ "$FIRMWARE_TYPE" == "uefi" ]]; then
-        parted -s "$disk" mklabel gpt || return 1
-        parted -s "$disk" mkpart primary fat32 1MiB 513MiB || return 1
-        parted -s "$disk" set 1 esp on || return 1
-        parted -s "$disk" mkpart primary linux-swap 513MiB $((513 + swap_size_gb * 1024))MiB || return 1
-        parted -s "$disk" mkpart primary ext4 $((513 + swap_size_gb * 1024))MiB 100% || return 1
+        # Create partitions with sgdisk
+        sgdisk -n1:0:+550MiB -t1:ef00 -c1:"EFI System Partition" "$disk" || return 1
+        sgdisk -n2:0:+${swap_size_gb}GiB -t2:8200 -c2:"Linux swap" "$disk" || return 1
+        sgdisk -n3:0:0 -t3:8300 -c3:"Arch Linux root" "$disk" || return 1
         
-        sleep 2
         partprobe "$disk"
-        sleep 1
+        sleep 2
         
-        if [[ "$disk" =~ nvme ]]; then
-          EFI_PARTITION="${disk}p1"
-          SWAP_PARTITION="${disk}p2"
-          ROOT_PARTITION="${disk}p3"
-        else
-          EFI_PARTITION="${disk}1"
-          SWAP_PARTITION="${disk}2"
-          ROOT_PARTITION="${disk}3"
-        fi
+        # Get partition names using helper function
+        EFI_PARTITION=$(disk::get_partition "$disk" 1)
+        SWAP_PARTITION=$(disk::get_partition "$disk" 2)
+        ROOT_PARTITION=$(disk::get_partition "$disk" 3)
         
+        echo "✓ Partitions created:"
+        echo "  EFI:  $EFI_PARTITION (550M)"
+        echo "  Swap: $SWAP_PARTITION (${swap_size_gb}GB)"
+        echo "  Root: $ROOT_PARTITION (remaining)"
+        
+        # Verify partitions exist
+        [[ -b "$EFI_PARTITION" ]] || { echo "Error: EFI partition not found"; return 1; }
+        [[ -b "$SWAP_PARTITION" ]] || { echo "Error: Swap partition not found"; return 1; }
+        [[ -b "$ROOT_PARTITION" ]] || { echo "Error: Root partition not found"; return 1; }
+        
+        # Format partitions
+        echo ""
+        echo "Formatting partitions..."
         mkfs.fat -F32 "$EFI_PARTITION" || return 1
         mkswap "$SWAP_PARTITION" || return 1
         mkfs.ext4 -F "$ROOT_PARTITION" || return 1
         
+        echo "✓ Partitions formatted"
+        
         EFI_MOUNT="/boot"
       else
+        # BIOS with MBR
         parted -s "$disk" mklabel msdos || return 1
         parted -s "$disk" mkpart primary linux-swap 1MiB $((1 + swap_size_gb * 1024))MiB || return 1
         parted -s "$disk" mkpart primary ext4 $((1 + swap_size_gb * 1024))MiB 100% || return 1
         parted -s "$disk" set 2 boot on || return 1
         
-        sleep 2
         partprobe "$disk"
-        sleep 1
+        sleep 2
         
-        if [[ "$disk" =~ nvme ]]; then
-          SWAP_PARTITION="${disk}p1"
-          ROOT_PARTITION="${disk}p2"
-        else
-          SWAP_PARTITION="${disk}1"
-          ROOT_PARTITION="${disk}2"
-        fi
+        # Get partition names
+        SWAP_PARTITION=$(disk::get_partition "$disk" 1)
+        ROOT_PARTITION=$(disk::get_partition "$disk" 2)
         
+        echo "✓ Partitions created:"
+        echo "  Swap: $SWAP_PARTITION (${swap_size_gb}GB)"
+        echo "  Root: $ROOT_PARTITION (remaining)"
+        
+        # Verify and format
+        [[ -b "$SWAP_PARTITION" ]] || { echo "Error: Swap partition not found"; return 1; }
+        [[ -b "$ROOT_PARTITION" ]] || { echo "Error: Root partition not found"; return 1; }
+        
+        echo ""
+        echo "Formatting partitions..."
         mkswap "$SWAP_PARTITION" || return 1
         mkfs.ext4 -F "$ROOT_PARTITION" || return 1
+        
+        echo "✓ Partitions formatted"
       fi
       
-      echo "✓ Swap partition created: $SWAP_PARTITION (${swap_size_gb}GB)"
       INSTALL_TARGET="$ROOT_PARTITION"
       ;;
     
     3)
       # Advanced - with swap and home
-      echo "Creating advanced partition layout (with ${swap_size_gb}GB swap + separate home)..."
+      echo "Creating advanced partition layout (with ${swap_size_gb}GB swap + home)..."
       
-      # For home, use 40% of remaining space for root, 60% for home
       if [[ "$FIRMWARE_TYPE" == "uefi" ]]; then
-        local remaining_space=$((disk_size_gb - 1 - swap_size_gb))
-        local root_size=$((remaining_space * 40 / 100))
+        # Create partitions with sgdisk
+        sgdisk -n1:0:+550MiB -t1:ef00 -c1:"EFI System Partition" "$disk" || return 1
+        sgdisk -n2:0:+${swap_size_gb}GiB -t2:8200 -c2:"Linux swap" "$disk" || return 1
+        sgdisk -n3:0:+50GiB -t3:8300 -c3:"Arch Linux root" "$disk" || return 1
+        sgdisk -n4:0:0 -t4:8300 -c4:"Arch Linux home" "$disk" || return 1
         
-        parted -s "$disk" mklabel gpt || return 1
-        parted -s "$disk" mkpart primary fat32 1MiB 513MiB || return 1
-        parted -s "$disk" set 1 esp on || return 1
-        parted -s "$disk" mkpart primary linux-swap 513MiB $((513 + swap_size_gb * 1024))MiB || return 1
-        parted -s "$disk" mkpart primary ext4 $((513 + swap_size_gb * 1024))MiB $((513 + swap_size_gb * 1024 + root_size * 1024))MiB || return 1
-        parted -s "$disk" mkpart primary ext4 $((513 + swap_size_gb * 1024 + root_size * 1024))MiB 100% || return 1
-        
-        sleep 2
         partprobe "$disk"
-        sleep 1
+        sleep 2
         
-        if [[ "$disk" =~ nvme ]]; then
-          EFI_PARTITION="${disk}p1"
-          SWAP_PARTITION="${disk}p2"
-          ROOT_PARTITION="${disk}p3"
-          HOME_PARTITION="${disk}p4"
-        else
-          EFI_PARTITION="${disk}1"
-          SWAP_PARTITION="${disk}2"
-          ROOT_PARTITION="${disk}3"
-          HOME_PARTITION="${disk}4"
-        fi
+        # Get partition names
+        EFI_PARTITION=$(disk::get_partition "$disk" 1)
+        SWAP_PARTITION=$(disk::get_partition "$disk" 2)
+        ROOT_PARTITION=$(disk::get_partition "$disk" 3)
+        HOME_PARTITION=$(disk::get_partition "$disk" 4)
         
+        echo "✓ Partitions created:"
+        echo "  EFI:  $EFI_PARTITION (550M)"
+        echo "  Swap: $SWAP_PARTITION (${swap_size_gb}GB)"
+        echo "  Root: $ROOT_PARTITION (50GB)"
+        echo "  Home: $HOME_PARTITION (remaining)"
+        
+        # Verify partitions
+        [[ -b "$EFI_PARTITION" ]] || { echo "Error: EFI partition not found"; return 1; }
+        [[ -b "$SWAP_PARTITION" ]] || { echo "Error: Swap partition not found"; return 1; }
+        [[ -b "$ROOT_PARTITION" ]] || { echo "Error: Root partition not found"; return 1; }
+        [[ -b "$HOME_PARTITION" ]] || { echo "Error: Home partition not found"; return 1; }
+        
+        # Format partitions
+        echo ""
+        echo "Formatting partitions..."
         mkfs.fat -F32 "$EFI_PARTITION" || return 1
         mkswap "$SWAP_PARTITION" || return 1
         mkfs.ext4 -F "$ROOT_PARTITION" || return 1
         mkfs.ext4 -F "$HOME_PARTITION" || return 1
         
+        echo "✓ Partitions formatted"
+        
         EFI_MOUNT="/boot"
       else
-        local remaining_space=$((disk_size_gb - swap_size_gb))
-        local root_size=$((remaining_space * 40 / 100))
-        
+        # BIOS with MBR - 4 primary partitions max
         parted -s "$disk" mklabel msdos || return 1
         parted -s "$disk" mkpart primary linux-swap 1MiB $((1 + swap_size_gb * 1024))MiB || return 1
-        parted -s "$disk" mkpart primary ext4 $((1 + swap_size_gb * 1024))MiB $((1 + swap_size_gb * 1024 + root_size * 1024))MiB || return 1
+        parted -s "$disk" mkpart primary ext4 $((1 + swap_size_gb * 1024))MiB $((1 + swap_size_gb * 1024 + 50 * 1024))MiB || return 1
+        parted -s "$disk" mkpart primary ext4 $((1 + swap_size_gb * 1024 + 50 * 1024))MiB 100% || return 1
         parted -s "$disk" set 2 boot on || return 1
-        parted -s "$disk" mkpart primary ext4 $((1 + swap_size_gb * 1024 + root_size * 1024))MiB 100% || return 1
         
-        sleep 2
         partprobe "$disk"
-        sleep 1
+        sleep 2
         
-        if [[ "$disk" =~ nvme ]]; then
-          SWAP_PARTITION="${disk}p1"
-          ROOT_PARTITION="${disk}p2"
-          HOME_PARTITION="${disk}p3"
-        else
-          SWAP_PARTITION="${disk}1"
-          ROOT_PARTITION="${disk}2"
-          HOME_PARTITION="${disk}3"
-        fi
+        # Get partition names
+        SWAP_PARTITION=$(disk::get_partition "$disk" 1)
+        ROOT_PARTITION=$(disk::get_partition "$disk" 2)
+        HOME_PARTITION=$(disk::get_partition "$disk" 3)
         
+        echo "✓ Partitions created:"
+        echo "  Swap: $SWAP_PARTITION (${swap_size_gb}GB)"
+        echo "  Root: $ROOT_PARTITION (50GB)"
+        echo "  Home: $HOME_PARTITION (remaining)"
+        
+        # Verify partitions
+        [[ -b "$SWAP_PARTITION" ]] || { echo "Error: Swap partition not found"; return 1; }
+        [[ -b "$ROOT_PARTITION" ]] || { echo "Error: Root partition not found"; return 1; }
+        [[ -b "$HOME_PARTITION" ]] || { echo "Error: Home partition not found"; return 1; }
+        
+        # Format partitions
+        echo ""
+        echo "Formatting partitions..."
         mkswap "$SWAP_PARTITION" || return 1
         mkfs.ext4 -F "$ROOT_PARTITION" || return 1
         mkfs.ext4 -F "$HOME_PARTITION" || return 1
+        
+        echo "✓ Partitions formatted"
       fi
       
-      echo "✓ Swap partition: $SWAP_PARTITION (${swap_size_gb}GB)"
-      echo "✓ Home partition: $HOME_PARTITION"
       INSTALL_TARGET="$ROOT_PARTITION"
       ;;
     
