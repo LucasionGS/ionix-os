@@ -108,8 +108,8 @@ disk::partition_auto() {
   echo ""
   echo "⚠ WARNING: This will completely erase $disk!"
   echo ""
-  read -p "Type 'YES' to confirm: " confirm
-  if [[ "$confirm" != "YES" ]]; then
+  read -p "Type 'yes' to confirm: " confirm
+  if [[ "$confirm" != "yes" ]]; then
     echo "Operation cancelled."
     return 1
   fi
@@ -309,8 +309,8 @@ disk::partition_preset() {
   echo ""
   echo "⚠ WARNING: This will completely erase $disk!"
   echo ""
-  read -p "Type 'YES' to confirm: " confirm
-  if [[ "$confirm" != "YES" ]]; then
+  read -p "Type 'yes' to confirm: " confirm
+  if [[ "$confirm" != "yes" ]]; then
     echo "Operation cancelled."
     return 1
   fi
