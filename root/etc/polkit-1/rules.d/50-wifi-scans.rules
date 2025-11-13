@@ -5,7 +5,7 @@ polkit.addRule(function(action, subject) {
          action.id == "org.freedesktop.NetworkManager.settings.modify.own" ||
          action.id == "org.freedesktop.NetworkManager.settings.modify.system" ||
          action.id == "org.freedesktop.NetworkManager.network-control") &&
-        subject.isInGroup("sudo")) {
+        subject.isInGroup("wheel")) {
         return polkit.Result.YES;
     }
 });
