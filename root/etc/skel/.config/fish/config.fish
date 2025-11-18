@@ -33,3 +33,4 @@ zoxide init fish | source
 oh-my-posh init fish --config 'bubbles' | source
 
 alias s="kitten ssh"
+alias cd="z"

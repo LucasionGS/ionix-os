@@ -88,6 +88,8 @@ pacstrap::install_base_system() {
       fi
     done
     
+    chmod -R 777 "$ionix_dir"
+    
     echo "✓ Ionix repository copied."
   else
     echo "Error: Could not find Ionix repository."

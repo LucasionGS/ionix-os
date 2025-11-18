@@ -105,7 +105,6 @@
     "pyprland",
     "wleave-git",
     "libastal-meta",
-    "aylurs-gtk-shell",
     "better-control-git",
     "hyprshot-git",
     "google-chrome"
@@ -130,12 +129,13 @@
       "git clone https://github.com/LucasionGS/nvim-nvchad /etc/skel/.config/nvim"
     ],
     "rofi-themes": [
-      "git clone --depth=1 https://github.com/adi1090x/rofi.git /tmp/rofi-custom",
-      "cd /tmp/rofi-custom && chmod +x setup.sh && bash setup.sh",
-      "sed -i \"s/theme='style-10'/theme='style-2'/\" ~/.config/rofi/launchers/type-3/launcher.sh",
-      "rm -rf /tmp/rofi-custom"
+      "git clone --depth=1 https://github.com/adi1090x/rofi.git /etc/skel/.config/rofi",
+      "cd /etc/skel/.config/rofi && chmod +x setup.sh && bash setup.sh",
+      "sed -i \"s/theme='style-10'/theme='style-2'/\" /etc/skel/.config/rofi/launchers/type-3/launcher.sh",
+      "rm -rf /etc/skel/.config/rofi"
     ],
     "hypr-settings": [
+      "rustup default stable",
       "git clone https://github.com/LucasionGS/hypr-settings.git /tmp/archion-settings",
       "cd /tmp/archion-settings && chmod +x build.sh && bash build.sh",
       "rm -rf /tmp/archion-settings"
