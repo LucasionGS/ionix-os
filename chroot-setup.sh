@@ -83,6 +83,13 @@ interactive_config() {
 # Install all the specific OS packages
 # Here we do all of the installation of the Ionix OS packages and configuration
 boot::install_ionix_os() {
+  # Swap for builds
+  fallocate -l 8G /mnt/swapfile
+  chmod 600 /mnt/swapfile
+  mkswap /mnt/swapfile
+  swapon /mnt/swapfile
+
+  
   local curDir="$(pwd)"
 
   # Install Ionix OS packages based on config/packages.json
@@ -336,6 +343,11 @@ boot::install_ionix_os() {
   local root_files_dir="$SCRIPT_DIR/root"
   # Install root files with "install"
   rsync -a "$root_files_dir"/ /
+
+  # Remove swapfile after installation
+  echo "Removing swapfile..."
+  swapoff /mnt/swapfile
+  rm -f /mnt/swapfile
 }
 
 # Main execution
