@@ -199,13 +199,6 @@ boot::install_ionix_os() {
   else
     echo "No AUR packages to install"
   fi
-
-  # Remove temporary AUR user
-  if id -u ionix_aur &> /dev/null; then
-    echo "Removing temporary user 'ionix_aur'..."
-    userdel -r ionix_aur
-    rm -f /etc/sudoers.d/ionix_aur
-  fi
   
   # 3. Install Snap packages
   echo ""
@@ -343,6 +336,17 @@ boot::install_ionix_os() {
   local root_files_dir="$SCRIPT_DIR/root"
   # Install root files with "install"
   rsync -a "$root_files_dir"/ /
+
+  # Remove temporary AUR user
+  if id -u ionix_aur &> /dev/null; then
+    echo "Removing temporary user 'ionix_aur'..."
+    if userdel -r ionix_aur; then
+      echo "✓ Temporary user 'ionix_aur' removed."
+      rm -f /etc/sudoers.d/ionix_aur
+    else
+      echo "Warning: Failed to remove temporary user 'ionix_aur'."
+    fi
+  fi
 
   # Remove swapfile after installation
   echo "Removing swapfile..."
