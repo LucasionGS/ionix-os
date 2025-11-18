@@ -159,7 +159,7 @@ boot::install_ionix_os() {
   echo "Installing yay AUR helper..."
   echo "This will allow us to install packages from the Arch User Repository"
   
-    if git clone https://aur.archlinux.org/yay.git /tmp/yay; then
+    if sudo -u ionix_aur git clone https://aur.archlinux.org/yay.git /tmp/yay; then
       cd /tmp/yay
       if sudo -u ionix_aur makepkg -si --noconfirm; then
         echo "✓ Yay AUR helper installed successfully"
@@ -171,6 +171,8 @@ boot::install_ionix_os() {
     else
       echo "Error: Failed to clone yay repository"
     fi
+
+    read -p "Click to continue with AUR package installation..." -n 1 -r
 
     echo "Packages to install:"
     echo "$aur_packages" | sed 's/^/  - /'
