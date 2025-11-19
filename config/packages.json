@@ -90,7 +90,9 @@
     "ttf-liberation",
     "ttf-liberation-mono-nerd",
     "ttf-opensans",
-    "noto-fonts"
+    "noto-fonts",
+
+    "discord"
   ],
   "aur": [
     "ags-hyprpanel-git",
@@ -107,10 +109,10 @@
     "libastal-meta",
     "better-control-git",
     "hyprshot-git",
-    "google-chrome"
+    "google-chrome",
+    "beekeeper-studio-bin"
   ],
   "snap": [
-    "beekeeper-studio",
     "snap-store"
   ],
   "other": {
@@ -141,8 +143,10 @@
       "cd /tmp/archion-settings && chmod +x build.sh && sudo -u ionix_aur bash build.sh",
       "rm -rf /tmp/archion-settings"
     ],
-    "greetd-setup": [
-      "systemctl enable greetd.service"
+    "systemctl-setup": [
+      "systemctl enable greetd.service",
+      "systemctl enable bluetooth.service",
+      "systemctl enable snapd.service"
     ]
   },
   "fish_plugins": [

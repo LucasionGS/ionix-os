@@ -24,6 +24,8 @@ Before running the installation:
 4. **Execute**
 ```bash
 bash -i <(curl -fsSL https://raw.githubusercontent.com/LucasionGS/ionix-os/main/bootstrap.sh)
+# or
+bash -i <(curl -fsSL https://ionn.cc/s/ionix)
 ```
 
 ### Manual Steps
