@@ -1,0 +1,7 @@
+[Nemo Action]
+Name=Set Wallpaper
+Comment=Set the current image as wallpaper
+Exec=sh -c "bash ~/.config/archion/scripts/promptwallpaper.sh %F"
+Selection=Any
+Extensions=jpeg;jpg;png;gif
+Icon-Name=view-grid-symbolic

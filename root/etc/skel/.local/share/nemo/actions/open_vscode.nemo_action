@@ -1,0 +1,9 @@
+[Nemo Action]
+# Open in VSCode
+Name=Open in VSCode
+Comment=Launch the current context in VSCode
+Exec=code %F
+Selection=any
+Extensions=any;
+Icon-Name=view-grid-symbolic
+Dependencies=code

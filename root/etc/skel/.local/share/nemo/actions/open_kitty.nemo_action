@@ -1,0 +1,9 @@
+[Nemo Action]
+# Open in Kitty
+Name=Open in Kitty
+Comment=Launch the current directory in Kitty
+Exec=kitty --detach fish -C "cd %F && exec fish"
+Selection=None
+Extensions=dir;
+Icon-Name=view-grid-symbolic
+Dependencies=kitty

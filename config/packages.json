@@ -135,10 +135,14 @@
       "rm -rf /etc/skel/.config/rofi"
     ],
     "hypr-settings": [
-      "rustup default stable",
+      "sudo -u ionix_aur rustup default stable",
       "git clone https://github.com/LucasionGS/hypr-settings.git /tmp/archion-settings",
-      "cd /tmp/archion-settings && chmod +x build.sh && bash build.sh",
+      "chmod 777 /tmp/archion-settings -R",
+      "cd /tmp/archion-settings && chmod +x build.sh && sudo -u ionix_aur bash build.sh",
       "rm -rf /tmp/archion-settings"
+    ],
+    "greetd-setup": [
+      "systemctl enable greetd.service"
     ]
   },
   "fish_plugins": [
